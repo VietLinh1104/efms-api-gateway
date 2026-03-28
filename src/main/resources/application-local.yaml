@@ -22,19 +22,21 @@ spring:
       routes:
         # 1. Route cho Identity Service
         - id: efms-identity-service
-          uri: http://localhost:8081 # Thay bằng port thực tế ứng dụng Identity của bạn chạy ở local
+          uri: http://localhost:8081
           predicates:
             - Path=/api/identity/**
-          # Nếu Identity Service không định nghĩa context-path là /api/identity, bạn có thể cần thêm bộ lọc sau:
-          # filters:
-          #   - RewritePath=/api/identity/(?<segment>.*), /$\{segment}
+          filters:
+            # Dòng này sẽ hô biến "/api/identity/auth/login" thành "/api/auth/login"
+            - RewritePath=/api/identity/(?<segment>.*), /api/$\{segment}
 
         # 2. Route cho Core Service
         - id: efms-core-service
-          uri: http://localhost:8082 # Thay bằng port thực tế ứng dụng Core của bạn chạy ở local
+          uri: http://localhost:8082
           predicates:
             - Path=/api/core/**
-
+          filters:
+            # Tương tự cho Core Service
+            - RewritePath=/api/core/(?<segment>.*), /api/$\{segment}
 server:
   port: 8080
 
