@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: efms-api-gateway
+
+  profiles:
+    active: local
