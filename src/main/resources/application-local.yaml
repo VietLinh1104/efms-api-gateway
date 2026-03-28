@@ -19,6 +19,7 @@ spring:
             allowedHeaders: "*"
 
       # Cấu hình Routing theo đúng chuẩn EFMS Architecture
+            # Cấu hình Routing theo đúng chuẩn EFMS Architecture
       routes:
         # 1. Route cho Identity Service
         - id: efms-identity-service
@@ -26,8 +27,8 @@ spring:
           predicates:
             - Path=/api/identity/**
           filters:
-            # Dòng này sẽ hô biến "/api/identity/auth/login" thành "/api/auth/login"
-            - RewritePath=/api/identity/(?<segment>.*), /api/$\{segment}
+            # Gọt bỏ /api/identity/, chỉ giữ lại đoạn đằng sau (VD: biến thành /auth/login)
+            - RewritePath=/api/identity/(?<segment>.*), /$\{segment}
 
         # 2. Route cho Core Service
         - id: efms-core-service
@@ -36,7 +37,8 @@ spring:
             - Path=/api/core/**
           filters:
             # Tương tự cho Core Service
-            - RewritePath=/api/core/(?<segment>.*), /api/$\{segment}
+            - RewritePath=/api/core/(?<segment>.*), /$\{segment}
+
 server:
   port: 8080
 

@@ -32,7 +32,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     // Danh sách các API KHÔNG yêu cầu Token (Whitelist)
     private static final List<String> OPEN_API_ENDPOINTS = List.of(
             "/api/identity/auth/login",
-            "/api/identity/auth/register"
+            "/api/identity/auth/register",
+            "/v3/api-docs",
+            "/swagger-ui"
     );
 
     @Override
@@ -40,8 +42,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // 1. Nếu path nằm trong whitelist, cho qua luôn
-        if (isSecured(path)) {
+        // 1. Kiểm tra xem request này có cần xác thực Token không
+        if (requiresAuthentication(path)) {
 
             // 2. Kiểm tra Header Authorization
             if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
@@ -64,11 +66,12 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             }
         }
 
-        // Token hợp lệ, tiếp tục chuỗi xử lý (Route sang các service khác)
+        // Token hợp lệ hoặc API nằm trong whitelist, tiếp tục route sang các service khác
         return chain.filter(exchange);
     }
 
-    private boolean isSecured(String path) {
+    // Đổi tên và sửa lại logic cho dễ hiểu: Trả về TRUE nếu API CẦN xác thực (không nằm trong whitelist)
+    private boolean requiresAuthentication(String path) {
         return OPEN_API_ENDPOINTS.stream().noneMatch(path::contains);
     }
 
