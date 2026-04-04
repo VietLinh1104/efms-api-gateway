@@ -1,7 +1,7 @@
 spring:
   config:
     activate:
-      on-profile: local
+      on-profile: prod
 
   cloud:
     gateway:
@@ -19,11 +19,10 @@ spring:
             allowedHeaders: "*"
 
       # Cấu hình Routing theo đúng chuẩn EFMS Architecture
-            # Cấu hình Routing theo đúng chuẩn EFMS Architecture
       routes:
         # 1. Route cho Identity Service
         - id: efms-identity-service
-          uri: http://localhost:8081
+          uri: ${IDENTITY_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/identity/**
           filters:
@@ -32,7 +31,7 @@ spring:
 
         # 2. Route cho Core Service
         - id: efms-core-service
-          uri: http://localhost:8082
+          uri: ${CORE_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/api/core/**
           filters:
@@ -40,7 +39,7 @@ spring:
             - RewritePath=/api/core/(?<segment>.*), /$\{segment}
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 logging:
   pattern:
@@ -55,4 +54,4 @@ application:
     jwt:
       # Secret key này PHẢI GIỐNG với secret key đang dùng ở efms-identity-service
       # Độ dài tối thiểu 256-bit (32 ký tự) cho thuật toán HS256
-      secret-key: "D07F6E4A8B9C2D1E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C"
+      secret-key: ${JWT_SECRET_KEY:"dGhpcy1pcy1hLXN1cGVyLXNlY3JldC1rZXktdGhhdC1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc="}

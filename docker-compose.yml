@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  efms-api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: efms-api-gateway
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://efms-identity-service:8081}
+      - CORE_SERVICE_URL=${CORE_SERVICE_URL:-http://efms-core-service:8082}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-D07F6E4A8B9C2D1E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C}
+    env_file:
+      - .env
+    networks:
+      - efms-network
+
+networks:
+  efms-network:
+    name: efms-network
+    driver: bridge
