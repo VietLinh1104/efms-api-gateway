@@ -23,6 +23,13 @@ The Core service handles all major financial accounting operations, double-entry
 - `payments`: Bank/cash operations mapped to invoices or direct journals.
 - `bank_accounts` & `bank_transactions`: Bank statements and reconciliation data.
 
+## Workflow & Automation (Camunda 8)
+- **Engine**: Integrates with Camunda 8 SaaS via `camunda-spring-boot-starter` (8.8.x).
+- **Process Instances**: Instantiated dynamically (e.g., in `InvoiceService.confirm` for AP Bills via `camundaClient.newCreateInstanceCommand()`).
+- **User Tasks**: Completing User Tasks relies on **Tasklist API v1** (`/v1/tasks/search`) for searching the task ID by `processInstanceKey` and **Zeebe REST API v2** (`/v2/user-tasks/{taskId}/completion`) for completing it.
+- **Job Workers**: Uses `@JobWorker(type = "...")` to execute automated business tasks driven by BPMN gateways (e.g., creating journal entries, notifying rejections).
+- **Variables**: Process context is passed via `Map` (e.g., `approved`, `totalAmount`, `invoiceId`). Always map workflow results back to database fields (e.g., `approval_status`, `camunda_process_id`) to track state in Core.
+
 ## API Endpoints (v1)
 
 **Context Path:** `http://localhost:8080/api/core` (routed via API Gateway)
@@ -56,7 +63,8 @@ The Core service handles all major financial accounting operations, double-entry
 
 ## Code Structure Rules
 - **`controller`**: Grouped logically: `controller.accounting` for accounts/journals, `controller.finance` for banks, etc. Returns structured `ApiResponse`.
-- **`service`**: Validation logic e.g., checking if `fiscal_period` is `open` before posting.
+- **`service`**: Validation logic e.g., checking if `fiscal_period` is `open` before posting. Also responsible for triggering Camunda workflows.
+- **`service/worker`**: Contains Camunda `@JobWorker` classes that execute logic when tasks are assigned by the Zeebe engine.
 - **`repository`**: Database connections requiring `companyId`.
 - **`entity` / `dto` (request, response) / `mapper`**: Similar architecture to Identity Service.
 

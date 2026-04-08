@@ -47,6 +47,12 @@ UPDATE users SET role_id = (SELECT id FROM roles WHERE roles.name = users.role);
 ALTER TABLE users ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id);
 ALTER TABLE users DROP COLUMN role; -- Cẩn thận: Đảm bảo đã chạy migration data trước khi drop
 
+ALTER TABLE public.invoices
+    ADD COLUMN approval_status VARCHAR(20) DEFAULT NULL,       -- pending | approved | rejected
+    ADD COLUMN approval_comment TEXT DEFAULT NULL,             -- lý do từ chối
+    ADD COLUMN camunda_process_id VARCHAR(255) DEFAULT NULL;   -- lưu processInstanceKey từ Camunda
+
+
 
 -- ------------------------------------------------------------------------------
 -- PHẦN 2: XÓA CÁC RÀNG BUỘC KHÓA NGOẠI (FOREIGN KEYS) CỦA CORE ĐỐI VỚI IDENTITY

@@ -222,6 +222,9 @@ CREATE TABLE invoices (
     total_amount     NUMERIC(18,2) NOT NULL DEFAULT 0,
     paid_amount      NUMERIC(18,2) NOT NULL DEFAULT 0,
     status           VARCHAR(20) NOT NULL DEFAULT 'draft',  -- draft / open / partial / paid / cancelled
+    approval_status  VARCHAR(20) DEFAULT NULL,              -- pending / approved / rejected
+    approval_comment TEXT DEFAULT NULL,
+    camunda_process_id VARCHAR(255) DEFAULT NULL,
     journal_entry_id UUID REFERENCES journal_entries(id),
     created_by       UUID, -- UUID từ Identity Service
     created_at       TIMESTAMP DEFAULT now()
