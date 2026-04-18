@@ -38,6 +38,15 @@ spring:
             # Tương tự cho Core Service
             - RewritePath=/api/core/(?<segment>.*), /$\{segment}
 
+        # 3. Route cho Common Service
+        - id: efms-common-service
+          uri: ${COMMON_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/common/**
+          filters:
+            # Tương tự cho Common Service
+            - RewritePath=/api/common/(?<segment>.*), /$\{segment}
+
 server:
   port: ${SERVER_PORT:8080}
 
