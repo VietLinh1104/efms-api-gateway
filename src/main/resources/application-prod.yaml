@@ -48,7 +48,7 @@ spring:
             - RewritePath=/api/common/(?<segment>.*), /$\{segment}
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${PORT:8080}
 
 logging:
   pattern:
