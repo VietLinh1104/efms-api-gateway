@@ -19,6 +19,9 @@ RUN ./mvnw package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
+# Set active profile to prod by default
+ENV SPRING_PROFILES_ACTIVE=prod
+
 # Copy the jar file from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
@@ -26,4 +29,4 @@ COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
 # Run the application
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=dev"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
