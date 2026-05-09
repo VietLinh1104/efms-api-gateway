@@ -61,5 +61,6 @@ logging:
 application:
   security:
     jwt:
-      # Ưu tiên JWT_SECRET, nếu không có dùng JWT_SECRET_KEY, cuối cùng mới dùng default
-      secret-key: ${JWT_SECRET:${JWT_SECRET_KEY:"dGhpcy1pcy1hLXN1cGVyLXNlY3JldC1rZXktdGhhdC1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc="}}
+      # Secret key này PHẢI GIỐNG với secret key đang dùng ở efms-identity-service
+      # Độ dài tối thiểu 256-bit (32 ký tự) cho thuật toán HS256
+      secret-key: ${JWT_SECRET:"dGhpcy1pcy1hLXN1cGVyLXNlY3JldC1rZXktdGhhdC1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc="}

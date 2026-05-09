@@ -60,23 +60,25 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             try {
                 Claims claims = jwtUtil.getClaims(token);
 
-                // Trích xuất thông tin an toàn (tránh null)
+                // Trích xuất thông tin
                 String email = claims.getSubject();
                 String userId = Objects.toString(claims.get("userId"), "");
                 String companyId = Objects.toString(claims.get("companyId"), "");
                 String permissions = extractPermissions(claims);
 
-                // Thêm thông tin vào Header để forward cho các service phía sau
+                // FIX: Dùng .headers(consumer) để tránh UnsupportedOperationException
+                // (ReadOnlyHttpHeaders)
                 ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                        .header("X-User-Email", email != null ? email : "")
-                        .header("X-User-Id", userId)
-                        .header("X-User-Company-Id", companyId)
-                        .header("X-User-Permission", permissions)
+                        .headers(httpHeaders -> {
+                            httpHeaders.set("X-User-Email", email != null ? email : "");
+                            httpHeaders.set("X-User-Id", userId);
+                            httpHeaders.set("X-User-Company-Id", companyId);
+                            httpHeaders.set("X-User-Permission", permissions);
+                        })
                         .build();
 
                 return chain.filter(exchange.mutate().request(modifiedRequest).build());
             } catch (Exception e) {
-                // In đầy đủ StackTrace để debug trên Production
                 log.error("JWT Validation failed for path {}: ", path, e);
                 return onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
             }
@@ -91,7 +93,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             if (permissionsObj instanceof List<?>) {
                 List<?> list = (List<?>) permissionsObj;
                 String joined = list.stream()
-                        .filter(Objects::nonNull) // Lọc bỏ các phần tử null
+                        .filter(Objects::nonNull)
                         .map(Object::toString)
                         .collect(Collectors.joining(","));
                 return "[" + joined + "]";
