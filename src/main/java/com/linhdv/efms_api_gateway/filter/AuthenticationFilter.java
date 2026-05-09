@@ -36,8 +36,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             "/api/identity/auth/login",
             "/api/identity/auth/register",
             "/v3/api-docs",
-            "/swagger-ui"
-    );
+            "/swagger-ui");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -60,7 +59,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
             try {
                 Claims claims = jwtUtil.getClaims(token);
-                
+
                 // Trích xuất thông tin an toàn (tránh null)
                 String email = claims.getSubject();
                 String userId = Objects.toString(claims.get("userId"), "");
@@ -77,7 +76,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
                 return chain.filter(exchange.mutate().request(modifiedRequest).build());
             } catch (Exception e) {
-                log.error("JWT Validation failed for path {}: {}", path, e.getMessage());
+                // In đầy đủ StackTrace để debug trên Production
+                log.error("JWT Validation failed for path {}: ", path, e);
                 return onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
             }
         }
@@ -91,12 +91,13 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             if (permissionsObj instanceof List<?>) {
                 List<?> list = (List<?>) permissionsObj;
                 String joined = list.stream()
+                        .filter(Objects::nonNull) // Lọc bỏ các phần tử null
                         .map(Object::toString)
                         .collect(Collectors.joining(","));
                 return "[" + joined + "]";
             }
         } catch (Exception e) {
-            log.error("Error extracting permissions from token: {}", e.getMessage());
+            log.error("Error extracting permissions from token: ", e);
         }
         return "[]";
     }
