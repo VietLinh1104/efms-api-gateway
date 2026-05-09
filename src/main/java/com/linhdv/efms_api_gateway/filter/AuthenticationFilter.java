@@ -1,10 +1,10 @@
 package com.linhdv.efms_api_gateway.filter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.jsonwebtoken.Claims;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linhdv.efms_api_gateway.dto.ApiResponse;
 import com.linhdv.efms_api_gateway.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -21,6 +21,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -30,7 +32,6 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private final JwtUtil jwtUtil;
     private final ObjectMapper objectMapper;
 
-    // Danh sách các API KHÔNG yêu cầu Token (Whitelist)
     private static final List<String> OPEN_API_ENDPOINTS = List.of(
             "/api/identity/auth/login",
             "/api/identity/auth/register",
@@ -43,59 +44,67 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // 1. Kiểm tra xem request này có cần xác thực Token không
         if (requiresAuthentication(path)) {
-
-            // 2. Kiểm tra Header Authorization
             if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                log.warn("Missing Authorization header for path: {}", path);
                 return onError(exchange, "Missing Authorization header", HttpStatus.UNAUTHORIZED);
             }
 
             String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            String token = "";
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                authHeader = authHeader.substring(7); // Bỏ chữ "Bearer " để lấy token thật
+                token = authHeader.substring(7);
             } else {
                 return onError(exchange, "Invalid Authorization header format", HttpStatus.UNAUTHORIZED);
             }
 
-            // 3. Validate Token & Extract Claims
-            Claims claims;
             try {
-                claims = jwtUtil.getClaims(authHeader);
+                Claims claims = jwtUtil.getClaims(token);
+                
+                // Trích xuất thông tin an toàn (tránh null)
+                String email = claims.getSubject();
+                String userId = Objects.toString(claims.get("userId"), "");
+                String companyId = Objects.toString(claims.get("companyId"), "");
+                String permissions = extractPermissions(claims);
+
+                // Thêm thông tin vào Header để forward cho các service phía sau
+                ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
+                        .header("X-User-Email", email != null ? email : "")
+                        .header("X-User-Id", userId)
+                        .header("X-User-Company-Id", companyId)
+                        .header("X-User-Permission", permissions)
+                        .build();
+
+                return chain.filter(exchange.mutate().request(modifiedRequest).build());
             } catch (Exception e) {
-                log.error("JWT Validation failed: {}", e.getMessage());
+                log.error("JWT Validation failed for path {}: {}", path, e.getMessage());
                 return onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
             }
-
-            // 4. Forward User Info via Headers
-            ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                    .header("X-User-Email", claims.getSubject())
-                    .header("X-User-Id", String.valueOf(claims.get("userId")))
-                    .header("X-User-Company-Id", String.valueOf(claims.get("companyId")))
-                    .header("X-User-Permission", extractPermissions(claims))
-                    .build();
-
-            return chain.filter(exchange.mutate().request(modifiedRequest).build());
         }
 
         return chain.filter(exchange);
     }
 
     private String extractPermissions(Claims claims) {
-        Object permissions = claims.get("permissions");
-        if (permissions instanceof List) {
-            List<String> permissionList = (List<String>) permissions;
-            return "[" + String.join(",", permissionList) + "]";
+        try {
+            Object permissionsObj = claims.get("permissions");
+            if (permissionsObj instanceof List<?>) {
+                List<?> list = (List<?>) permissionsObj;
+                String joined = list.stream()
+                        .map(Object::toString)
+                        .collect(Collectors.joining(","));
+                return "[" + joined + "]";
+            }
+        } catch (Exception e) {
+            log.error("Error extracting permissions from token: {}", e.getMessage());
         }
         return "[]";
     }
 
-    // Đổi tên và sửa lại logic cho dễ hiểu: Trả về TRUE nếu API CẦN xác thực (không nằm trong whitelist)
     private boolean requiresAuthentication(String path) {
         return OPEN_API_ENDPOINTS.stream().noneMatch(path::contains);
     }
 
-    // Hàm trả về lỗi chuẩn hóa theo ApiResponse của hệ thống EFMS
     private Mono<Void> onError(ServerWebExchange exchange, String errorMessage, HttpStatus httpStatus) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(httpStatus);
@@ -118,6 +127,6 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -1; // Đảm bảo Filter này chạy trước khi routing
+        return -1;
     }
 }

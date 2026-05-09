@@ -63,4 +63,4 @@ application:
     jwt:
       # Secret key này PHẢI GIỐNG với secret key đang dùng ở efms-identity-service
       # Độ dài tối thiểu 256-bit (32 ký tự) cho thuật toán HS256
-      secret-key: ${JWT_SECRET_KEY:"dGhpcy1pcy1hLXN1cGVyLXNlY3JldC1rZXktdGhhdC1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc="}
+      secret-key: ${JWT_SECRET:"dGhpcy1pcy1hLXN1cGVyLXNlY3JldC1rZXktdGhhdC1tdXN0LWJlLWF0LWxlYXN0LTI1Ni1iaXRzLWxvbmc="}
