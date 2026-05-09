@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -44,40 +45,38 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
 
         if (requiresAuthentication(path)) {
-            if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                log.warn("Missing Authorization header for path: {}", path);
+            String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                log.warn("Missing or invalid Authorization header for path: {}", path);
                 return onError(exchange, "Missing Authorization header", HttpStatus.UNAUTHORIZED);
             }
 
-            String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-            String token = "";
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                token = authHeader.substring(7);
-            } else {
-                return onError(exchange, "Invalid Authorization header format", HttpStatus.UNAUTHORIZED);
-            }
+            String token = authHeader.substring(7);
 
             try {
                 Claims claims = jwtUtil.getClaims(token);
 
-                // Trích xuất thông tin
                 String email = claims.getSubject();
                 String userId = Objects.toString(claims.get("userId"), "");
                 String companyId = Objects.toString(claims.get("companyId"), "");
                 String permissions = extractPermissions(claims);
 
-                // FIX: Dùng .headers(consumer) để tránh UnsupportedOperationException
-                // (ReadOnlyHttpHeaders)
-                ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                        .headers(httpHeaders -> {
-                            httpHeaders.set("X-User-Email", email != null ? email : "");
-                            httpHeaders.set("X-User-Id", userId);
-                            httpHeaders.set("X-User-Company-Id", companyId);
-                            httpHeaders.set("X-User-Permission", permissions);
-                        })
-                        .build();
+                ServerHttpRequest decorator = new ServerHttpRequestDecorator(request) {
+                    @Override
+                    public HttpHeaders getHeaders() {
+                        HttpHeaders mutableHeaders = new HttpHeaders();
+                        mutableHeaders.putAll(super.getHeaders());
+                        mutableHeaders.set("X-User-Email", email != null ? email : "");
+                        mutableHeaders.set("X-User-Id", userId);
+                        mutableHeaders.set("X-User-Company-Id", companyId);
+                        mutableHeaders.set("X-User-Permission", permissions);
+                        return mutableHeaders;
+                    }
+                };
 
-                return chain.filter(exchange.mutate().request(modifiedRequest).build());
+                return chain.filter(exchange.mutate().request(decorator).build());
+
             } catch (Exception e) {
                 log.error("JWT Validation failed for path {}: ", path, e);
                 return onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
@@ -99,7 +98,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                 return "[" + joined + "]";
             }
         } catch (Exception e) {
-            log.error("Error extracting permissions from token: ", e);
+            log.error("Error extracting permissions: ", e);
         }
         return "[]";
     }
