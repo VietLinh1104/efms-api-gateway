@@ -1,5 +1,6 @@
 package com.linhdv.efms_api_gateway.util;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders; // Thêm import này
 import io.jsonwebtoken.security.Keys;
@@ -20,9 +21,14 @@ public class JwtUtil {
     }
 
     public void validateToken(final String token) {
-        Jwts.parserBuilder()
+        getClaims(token);
+    }
+
+    public Claims getClaims(final String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
-                .parseClaimsJws(token);
+                .parseClaimsJws(token)
+                .getBody();
     }
 }

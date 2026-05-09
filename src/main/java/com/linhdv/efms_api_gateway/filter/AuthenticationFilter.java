@@ -1,6 +1,7 @@
 package com.linhdv.efms_api_gateway.filter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.jsonwebtoken.Claims;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linhdv.efms_api_gateway.dto.ApiResponse;
 import com.linhdv.efms_api_gateway.util.JwtUtil;
@@ -57,17 +58,36 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                 return onError(exchange, "Invalid Authorization header format", HttpStatus.UNAUTHORIZED);
             }
 
-            // 3. Validate Token
+            // 3. Validate Token & Extract Claims
+            Claims claims;
             try {
-                jwtUtil.validateToken(authHeader);
+                claims = jwtUtil.getClaims(authHeader);
             } catch (Exception e) {
                 log.error("JWT Validation failed: {}", e.getMessage());
                 return onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
             }
+
+            // 4. Forward User Info via Headers
+            ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
+                    .header("X-User-Email", claims.getSubject())
+                    .header("X-User-Id", String.valueOf(claims.get("userId")))
+                    .header("X-User-Company-Id", String.valueOf(claims.get("companyId")))
+                    .header("X-User-Permission", extractPermissions(claims))
+                    .build();
+
+            return chain.filter(exchange.mutate().request(modifiedRequest).build());
         }
 
-        // Token hợp lệ hoặc API nằm trong whitelist, tiếp tục route sang các service khác
         return chain.filter(exchange);
+    }
+
+    private String extractPermissions(Claims claims) {
+        Object permissions = claims.get("permissions");
+        if (permissions instanceof List) {
+            List<String> permissionList = (List<String>) permissions;
+            return "[" + String.join(",", permissionList) + "]";
+        }
+        return "[]";
     }
 
     // Đổi tên và sửa lại logic cho dễ hiểu: Trả về TRUE nếu API CẦN xác thực (không nằm trong whitelist)
