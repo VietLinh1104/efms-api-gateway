@@ -18,43 +18,7 @@ services:
     networks:
       - efms-network
 
-  efms-common-service:
-    build:
-      context: ../efms-common-service
-      dockerfile: Dockerfile
-    container_name: efms-common-service
-    ports:
-      - "8083:8083"
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-      - DB_URL=jdbc:postgresql://efms-common-db:5432/efms_common_db
-      - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-yourpassword}
-      - JWT_SECRET=${JWT_SECRET_KEY:-D07F6E4A8B9C2D1E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C}
-      - IDENTITY_URL=${IDENTITY_SERVICE_URL:-http://efms-identity-service:8081}
-    depends_on:
-      - efms-common-db
-    networks:
-      - efms-network
-
-  efms-common-db:
-    image: postgres:16-alpine
-    container_name: efms-common-db
-    environment:
-      - POSTGRES_DB=efms_common_db
-      - POSTGRES_USER=${DB_USERNAME:-postgres}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-yourpassword}
-    ports:
-      - "5435:5432"
-    volumes:
-      - common-db-data:/var/lib/postgresql/data
-    networks:
-      - efms-network
-
 networks:
   efms-network:
     name: efms-network
     driver: bridge
-
-volumes:
-  common-db-data:
