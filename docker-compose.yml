@@ -14,8 +14,6 @@ services:
       - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://efms-identity-service:8081}
       - CORE_SERVICE_URL=${CORE_SERVICE_URL:-http://efms-core-service:8082}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-D07F6E4A8B9C2D1E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C}
-    env_file:
-      - .env
     networks:
       - efms-network
 

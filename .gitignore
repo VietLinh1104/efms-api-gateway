@@ -15,7 +15,7 @@ mvnw
 .springBeans
 .sts4-cache
 .DS_Store
-
+docker-compose.yml
 ### IntelliJ IDEA ###
 .idea
 *.iws
