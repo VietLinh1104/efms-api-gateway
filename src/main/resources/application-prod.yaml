@@ -22,7 +22,7 @@ spring:
       routes:
         # 1. Route cho Identity Service
         - id: efms-identity-service
-          uri: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+          uri: ${PRIVATE_IDENTITY_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/identity/**
           filters:
@@ -31,7 +31,7 @@ spring:
 
         # 2. Route cho Core Service
         - id: efms-core-service
-          uri: ${CORE_SERVICE_URL:http://localhost:8082}
+          uri: ${PRIVATE_CORE_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/api/core/**
           filters:
@@ -40,7 +40,7 @@ spring:
 
         # 3. Route cho Common Service
         - id: efms-common-service
-          uri: ${COMMON_SERVICE_URL:http://localhost:8083}
+          uri: ${PRIVATE_COMMON_SERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/api/common/**
           filters:
