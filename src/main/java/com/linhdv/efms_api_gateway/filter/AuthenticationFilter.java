@@ -36,6 +36,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private static final List<String> OPEN_API_ENDPOINTS = List.of(
             "/api/identity/auth/login",
             "/api/identity/auth/register",
+            "/api/identity/auth/activate",
             "/api/identity/oauth",
             "/v3/api-docs",
             "/swagger-ui");
